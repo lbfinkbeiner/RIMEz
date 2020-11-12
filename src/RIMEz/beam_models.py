@@ -10,6 +10,38 @@ from spin1_beam_model.jones_matrix_field import AntennaFarFieldResponse
 
 from .dfitpack_numba import bispeu_nb
 
+def model_data_to_spline_params(full_file_name, nu_axis, L_synth=180, indexed=False):
+    """
+    Parameters:
+    full_file_name: string : the full path to the file containing the spin1
+        model data.
+    nu_axis: numpy array of floats, frequencies in Hz.
+    L_synth: the bandlimit of the maps used to derive the spline approximation.
+
+    Returns:
+        The parameters that we would use to generate the spline beam function
+    """
+
+    if np.any(nu_axis < 1e6):
+        msg = "Warning: input frequencies look like they might not be in units of Hz."
+        print(msg)
+
+    AR = AntennaFarFieldResponse(full_file_name)
+    AR.derive_symmetric_rotated_feed(rotation_angle_sign="positive")
+
+    nu_axis_MHz = 1e-6 * nu_axis
+    AR.compute_spatial_spline_approximations(nu_axis_MHz, L_synth=L_synth)
+
+    E_coeffs = AR.E_spl_coeffs
+    rE_coeffs = AR.rE_spl_coeffs
+
+    tx = AR.xknots
+    ty = AR.yknots
+    kx = AR.kx
+    ky = AR.ky
+
+    return nu_axis, tx, ty, kx, ky, E_coeffs, rE_coeffs
+
 
 def model_data_to_spline_beam_func(full_file_name, nu_axis, L_synth=180, indexed=False):
     """
